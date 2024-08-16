@@ -1,0 +1,102 @@
+const fastify = require('fastify');
+const mysql = require('mysql2');
+
+// Initialize database connection
+async function initialize() {
+    const connection = await mysql.createConnection({
+        host: "localhost",
+        user: "root",
+        password: "",
+        database: "cbf"
+    });
+
+    // Route to add a new user
+    fastify.post('/add', async (request, reply) => {
+        const { name, age, degree } = request.body;
+
+        if (!name || !age || !degree) {
+            reply.send("Name, age, and degree are required");
+        } else {
+            const [result] = await connection.execute(
+                `INSERT INTO info (name, age, degree) VALUES ('${req.body.name}', '${req.body.age}', '${req.body.degree}' )`
+                [name, age, degree]
+            );
+            if (result) {
+                reply.send("User added successfully");
+            } else {
+                reply.send("Error inside server");
+            }
+        }
+    });
+
+    // Route to get all users
+    fastify.get('/user', async (request, reply) => {
+        const [rows] = await connection.execute('SELECT * FROM info');
+        
+        if (rows.length > 0) {
+            reply.send(rows);
+        } else if (rows.length === 0) {
+            reply.send("No users found");
+        } else {
+            reply.send("Error inside server");
+        }
+    });
+
+    // Route to get a specific user by ID
+    fastify.get('/user/:id', async (request, reply) => {
+        const { id } = request.params;
+        const [rows] = await connection.execute(`SELECT * FROM info WHERE id = ${req.params.id}`, [id]);
+
+        if (rows.length > 0) {
+            reply.send(rows);
+        } else if (rows.length === 0) {
+            reply.send("User not found");
+        } else {
+            reply.send("Error inside server");
+        }
+    });
+
+    // Route to update a specific user by ID
+    fastify.put('/user/:id', async (request, reply) => {
+        const { id } = request.params;
+        const { name, age, degree } = request.body;
+        const [result] = await connection.execute(
+            `UPDATE info SET name = '${name}', degree ='${degree}', age = '${age}' WHERE id = ${req.params.id}`
+            [name, age, degree, id]
+        );
+
+        if (result.affectedRows > 0) {
+            reply.send("User updated successfully");
+        } else if (result.affectedRows === 0) {
+            reply.send("User not found");
+        } else {
+            reply.send("Error inside server");
+        }
+    });
+
+    // Route to delete a specific user by ID
+    fastify.delete('/user/:id', async (request, reply) => {
+        const { id } = request.params;
+        const [result] = await connection.execute(`DELETE FROM info WHERE id = ${req.params.id}`, [id]);
+
+        if (result.affectedRows > 0) {
+            reply.send("User deleted successfully");
+        } else if (result.affectedRows === 0) {
+            reply.send("User not found or no changes made");
+        } else {
+            reply.send("Error inside server");
+        }
+    });
+
+    // Start the server
+    try {
+        await fastify.listen({ port: 3001 });
+        fastify.log.info(`Server is running on http://localhost:3001`);
+    } catch (err) {
+        fastify.log.error(err);
+        process.exit(1);
+    }
+}
+
+// Call the initialization function
+initialize();
